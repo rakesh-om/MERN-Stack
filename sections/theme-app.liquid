@@ -1,0 +1,198 @@
+<div class="chatbot-container">
+  <div class="chatbot-toggle">
+    <img class="chatbot-icon" src="{{ 'chatbot.svg' | asset_url }}" alt="Chatbot">
+  </div>
+
+  <div class="ai-buying-guide">
+    <span class="close-chatbot">&times;</span>
+
+    <form id="buying-guide-form">
+      <label for="countrySelect">Select Country:</label>
+      <select class="country-select" name="country">
+        <option value="">-- Select Country --</option>
+        {{ country_option_tags }}
+      </select>
+
+      <label for="stateInput">Enter Your State:</label>
+      <input type="text" class="state-input" name="state" placeholder="Enter your state">
+
+      <label for="collections">Choose a Category:</label>
+      <select class="collection-select" name="collections">
+        <option value="#">Select a Category</option>
+        {% for collection in collections %}
+          <option value="{{ collection.handle }}">{{ collection.title }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="totalBudget">Enter Your Budget:</label>
+      <input type="number" class="total-budget" name="total_budget" placeholder="Enter budget for selected category">
+
+      <button type="button" class="check-budget">Check Budget</button>
+    </form>
+
+    <div id="filtered-products"></div>
+
+    <button class="add-to-cart" style="display:none;">Add to Cart</button>
+  </div>
+</div>
+
+<div id="budget-popup" style="display:none; position:fixed; top:30%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border:1px solid black; box-shadow:0px 0px 10px grey;">
+  <p id="popup-message"></p>
+  <button onclick="closePopup()">Close</button>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log('Chatbot script loaded.'); // Debugging log
+
+    let selectedProducts = [];
+
+    // Open chatbot
+    document.querySelector(".chatbot-toggle").addEventListener("click", function () {
+      console.log('Chatbot toggle clicked.'); // Debugging log
+      document.querySelector(".ai-buying-guide").classList.add("visible");
+    });
+
+    // Close chatbot
+    document.querySelector(".close-chatbot").addEventListener("click", function () {
+      console.log('Chatbot close clicked.'); // Debugging log
+      document.querySelector(".ai-buying-guide").classList.remove("visible");
+    });
+
+    // Fetch products when category is selected
+    document.querySelector(".collection-select").addEventListener("change", function () {
+      let collectionHandle = this.value;
+      console.log('Collection selected:', collectionHandle); // Debugging log
+
+      if (collectionHandle !== "#") {
+        fetch(`/collections/${collectionHandle}/products.json`)
+          .then(response => response.json())
+          .then(data => {
+            selectedProducts = []; // Clear previous data
+            let productsList = document.querySelector("#filtered-products");
+            productsList.innerHTML = "";
+
+            if (data.products.length > 0) {
+              data.products.forEach(product => {
+                let price = parseFloat(product.variants[0].price) / 100;
+                selectedProducts.push({ id: product.variants[0].id, title: product.title, price: price });
+
+                let productElement = document.createElement("div");
+                productElement.innerHTML = `<p><strong><span class="math-inline">\{product\.title\}</strong\> \- Price\: ₹</span>{price.toFixed(2)}</p>`;
+                productsList.appendChild(productElement);
+              });
+            } else {
+              productsList.innerHTML = "<p>No products found in this category.</p>";
+            }
+          })
+          .catch(error => console.error("Error fetching products:", error));
+      }
+    });
+
+    // Check budget validation
+    document.querySelector(".check-budget").addEventListener("click", function () {
+      let budget = parseFloat(document.querySelector(".total-budget").value);
+      console.log('Budget entered:', budget); // Debugging log
+
+      if (!budget || budget <= 0) {
+        showPopup("Please enter a valid budget.");
+        return;
+      }
+
+      let withinBudget = selectedProducts.some(product => product.price <= budget);
+
+      if (withinBudget) {
+        showPopup("Products are available within your budget.");
+        document.querySelector(".add-to-cart").style.display = "block"; // Show add-to-cart button
+      } else {
+        showPopup("No products available within your budget.");
+        document.querySelector(".add-to-cart").style.display = "none";
+      }
+    });
+
+    // Add selected product to cart
+    document.querySelector(".add-to-cart").addEventListener("click", function () {
+      let budget = parseFloat(document.querySelector(".total-budget").value);
+      let selectedProduct = selectedProducts.find(product => product.price <= budget);
+      console.log('Add to cart clicked, selected product:', selectedProduct); // Debugging log
+
+      if (selectedProduct) {
+        fetch('/cart/add.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quantity: 1, id: selectedProduct.id })
+        })
+          .then(response => response.json())
+          .then(data => {
+            showPopup("Product added to cart successfully!");
+            window.location.href = "/cart";
+          })
+          .catch(error => console.error("Error adding product to cart:", error));
+      } else {
+        showPopup("No products available within your budget.");
+      }
+    });
+  });
+
+  // Show popup
+  function showPopup(message) {
+    document.getElementById("popup-message").textContent = message;
+    document.getElementById("budget-popup").style.display = "block";
+  }
+
+  // Close popup
+  function closePopup() {
+    document.getElementById("budget-popup").style.display = "none";
+  }
+</script>
+
+<style>
+  .chatbot-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+  }
+
+  .chatbot-toggle {
+    width: 60px;
+    height: 60px;
+    background-color: #007bff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+  }
+
+  .chatbot-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .ai-buying-guide {
+    position: fixed;
+    bottom: 20px;
+    right: -350px;
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    max-width: 320px;
+    transition: right 0.4s ease-in-out;
+  }
+
+  .ai-buying-guide.visible {
+    right: 20px;
+  }
+
+  .close-chatbot {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  .check-budget,

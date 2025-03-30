@@ -1,0 +1,36 @@
+{
+  "article": [],
+  "blog": [],
+  "brand": [],
+  "collection": [],
+  "company": [],
+  "company_location": [],
+  "location": [],
+  "market": [],
+  "order": [],
+  "page": [],
+  "product": [
+    {
+      "key": "orange",
+      "namespace": "mantra",
+      "name": "orange",
+      "description": "",
+      "type": {
+        "name": "json",
+        "category": "JSON"
+      }
+    },
+    {
+      "key": "customer",
+      "namespace": "discount",
+      "name": "customer",
+      "description": "Customer",
+      "type": {
+        "name": "json",
+        "category": "JSON"
+      }
+    }
+  ],
+  "variant": [],
+  "shop": []
+}
