@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let country = document.getElementById("country-select").value;
         let state = document.getElementById("province-select").value;
         let budget = document.getElementById("total-budget").value;
-        let categoryParams = [];
+        let categoryData = [];
     
         for (let category of selectedCategories) {
             let percentageInput = document.querySelector(`input[data-category='${category}']`);
@@ -109,11 +109,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
             
-            categoryParams.push(`${encodeURIComponent(category)}=${encodeURIComponent(percentage)}`);
+            categoryData.push({ category, percentage, allocatedAmount, filteredProducts });
         }
     
-      let url = `/pages/product-selected-by-user/?country=${encodeURIComponent(country)}&state=${encodeURIComponent(state)}&budget=${encodeURIComponent(budget)}&${categoryParams.join("&")}`;
-         window.location.href = url;
+        localStorage.setItem("buyingGuideData", JSON.stringify({ country, state, budget, categoryData }));
+        window.location.href = "/pages/product-selected-by-user/";
     });
     
     async function getFilteredProducts(category, budget) {

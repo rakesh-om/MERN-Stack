@@ -268,9 +268,7 @@
     "selctedproducts_BmGhdp": {
       "type": "selectedproducts",
       "disabled": true,
-      "settings": {
-        "product_collection": ""
-      }
+      "settings": {}
     }
   },
   "order": [

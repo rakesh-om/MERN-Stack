@@ -18,9 +18,7 @@
     },
     "selctedproducts_P6zcMi": {
       "type": "selectedproducts",
-      "settings": {
-        "product_collection": "featured"
-      }
+      "settings": {}
     }
   },
   "order": [

@@ -1,80 +1,92 @@
-/* Chatbot Button */
+/* ============================= */
+/* Chatbot Floating Button       */
+/* ============================= */
 .chatbot-container {
     position: fixed;
     bottom: 20px;
     right: 20px;
     z-index: 9999;
 }
-/* Hide chatbot by default */
 
-.chatbot-toggle {
-    width: 60px;
-    height: 60px;
-    background-color: #007bff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-}
+
+    .chatbot-toggle {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #2e3135, #060f19);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform .3s,box-shadow .3s;
+        box-shadow: 0 8px 16px #007bff4d;
+        animation: pulse 1.5s infinite;
+    }
+
 
 .chatbot-toggle:hover {
-    transform: scale(1.1);
-    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+    transform: scale(1.15) rotate(8deg);
+    box-shadow: 0 12px 24px rgba(0, 123, 255, 0.6);
 }
 
 .chatbot-icon {
     width: 40px;
     height: 40px;
+    transition: transform 0.5s;
 }
 
-/* Chatbot Panel */
+.chatbot-toggle:hover .chatbot-icon {
+    transform: rotate(360deg) scale(1.1);
+}
+
+/* ============================= */
+/* AI Buying Guide Panel         */
+/* ============================= */
 .ai-buying-guide {
     position: fixed;
     bottom: 20px;
     right: -400px;
     width: 350px;
     max-height: 80vh;
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(15px);
     border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
     padding: 40px;
     overflow-y: auto;
-    transition: transform 0.4s ease-in-out, right 0.4s ease-in-out;
     font-family: "Poppins", sans-serif;
+    opacity: 0;
+    transform: translateX(50px) scale(0.95);
+    transition: opacity 0.6s, transform 0.6s;
     display: none;
 }
 
 .ai-buying-guide.visible {
     right: 20px;
-    transform: scale(1);
+    opacity: 1;
+    transform: translateX(0) scale(1);
     display: block;
 }
 
 /* Close Button */
 .close-chatbot {
     position: absolute;
-    top: 10px;
+    top: 12px;
     right: 15px;
     font-size: 22px;
     cursor: pointer;
-    color: #ebe1e1;
-    transition: color 0.3s ease-in-out;
+    color: #555;
+   
 }
 
 .close-chatbot:hover {
-    color: red;
-}
-.ai-buying-guide.visible {
-    background-color: currentcolor;
+    color: #615b5b;
+    transform: rotate(180deg) scale(1.2);
 }
 
-.ai-buying-guide.visible {
-    background-color: currentcolor;
-}
-/* Form Styling */
+/* ============================= */
+/* Form Styling                  */
+/* ============================= */
 #buying-guide-form {
     display: flex;
     flex-direction: column;
@@ -90,156 +102,104 @@ label {
 select,
 input[type="number"] {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     margin: 5px 0 15px;
     border: 1px solid #ccc;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 14px;
     background: #f8f9fa;
-    transition: border 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+
 }
 
 select:focus,
 input[type="number"]:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+    border-color: #1e2a38;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.4);
     outline: none;
+   
 }
 
-/* Category & Products */
+/* ============================= */
+/* Selected Categories & Products */
+/* ============================= */
 .selected-categories {
     margin-top: 10px;
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 6px;
 }
 
-.category-tag
- {
-    display: inline-flex;
+.category-tag {
+    display: flex;
     align-items: center;
-    background: #007bff;
+    background: #191a1c;
     color: white;
-    padding: 6px 12px;
-    margin: 5px;
+    padding: 8px 14px;
     border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
-    transition: background 0.3s ease-in-out;
+    transition: background 0.3s, transform 0.2s;
 }
 
-.category-tag:hover
- {
-    background: #0056b3;
+.category-tag:hover {
+    background: #000000;
+    transform: scale(1.05);
 }
 
 .remove-category,
-{
+.remove-product {
     margin-left: 8px;
     cursor: pointer;
     font-weight: bold;
     color: white;
-    transition: color 0.3s ease-in-out;
+    transition: color 0.3s, transform 0.2s;
 }
 
 .remove-category:hover,
 .remove-product:hover {
-    color: red;
+    color: rgb(218, 208, 208);
+    transform: scale(1.2);
 }
 
-/* Add to Cart Button */
-button {
-    background-color: #007bff;
-    color: white;
+.selected-products {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     padding: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    background: rgba(255, 245, 230, 0.9);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+
+button.submit-btn {
+    background: linear-gradient(135deg, #080808, #333);
+    color: white;
+    padding: 14px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 16px;
     font-weight: 600;
     width: 100%;
     margin-top: 10px;
-    transition: background 0.3s ease-in-out, transform 0.2s ease-in-out;
+    transition: all 0.3s;
 }
 
-button:hover {
-    background-color: #0056b3;
-    transform: translateY(-2px);
+button.submit-btn:hover {
+    background: linear-gradient(135deg, #000, #444);
+    transform: translateY(-2px) scale(1.05);
 }
 
-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-    transform: none;
-}
 
-/* Responsive */
 @media screen and (max-width: 400px) {
     .ai-buying-guide {
         width: 90%;
         right: -100%;
     }
-
     .ai-buying-guide.visible {
         right: 5%;
     }
-}
-.selected-products {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px;
-    max-height: 300px; /* Set max height */
-    overflow-y: auto; /* Enable scrolling */
-    background-color: beige;/* Light transparent black */
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-
-
-.product-tag:hover {
-    transform: scale(1.02);
-  
-} 
-
-.remove-product {
-    cursor: pointer;
-    margin-left: 10px;
-    font-weight: bold;
-    color: black;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 50%;
-    padding: 4px 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s ease, transform 0.2s ease-in-out;
-}
-
-.remove-product:hover {
-    
-    transform: scale(1.2);
-   
-}
-
-.product-tag {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: bold;
-    transition: transform 0.3s ease, background 0.3s ease;
-}
-
-.remove-product {
-    cursor: pointer;
-    font-weight: bold;
-    color: black;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s ease, transform 0.2s ease-in-out;
 }

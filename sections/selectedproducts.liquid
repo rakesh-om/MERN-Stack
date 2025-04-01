@@ -1,224 +1,229 @@
-{% comment %} <div class="grid-container">
-    {% for collection in collections %}
-        {% for product in collection.filteredProducts %}
-            <div class="product-item" data-category="{{ collection.handle }}">
-                <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title }}" class="product-image">
-                <h3 class="product-title">{{ product.title }}</h3>
-                <p class="product-price">{{ product.price | money }}</p>
-                
-                {% comment %} <div class="quantity-container" id="quantity-container-{{ product.id }}" style="display: none;">
-                    <button class="btn-quantity decrease" data-product-id="{{ product.id }}">-</button>
-                    <input type="number" class="input-quantity" id="quantity-{{ product.id }}" value="1" min="1">
-                    <button class="btn-quantity increase" data-product-id="{{ product.id }}">+</button>
-                </div> {% endcomment %}
-                <button class="btn-add-cart" data-product-id="{{ product.id }}">Add to Cart</button>
-            </div>
-        {% endfor %}
-    {% endfor %}
-    
-</div> {% endcomment %}
+<div id="selected-products">
+    <div class="container">
+        <div class="content">
+            <h2>Loading...</h2>
+        </div>
+    </div>
+</div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () { 
-        let chatbotForm = document.querySelector(".ai-buying-guide");
-        let chatbotToggle = document.querySelector(".chatbot-toggle");
-        let closeChatbot = document.querySelector(".close-chatbot");
-        let categorySelect = document.getElementById("category-select");
-        let budgetInput = document.getElementById("total-budget");
-        let selectedCategoriesContainer = document.querySelector(".selected-categories");
-        let percentageContainer = document.querySelector(".category-percentages");
-        let amountContainer = document.querySelector(".calculated-amounts");
-        let submitBtn = document.querySelector(".submit-btn");
-        let selectedCategories = [];
-    
-        submitBtn.disabled = true;
-        
-        chatbotToggle.addEventListener("click", () => chatbotForm.classList.add("visible"));
-        closeChatbot.addEventListener("click", () => chatbotForm.classList.remove("visible"));
-    
-        categorySelect.addEventListener("change", function () {
-            let category = this.value;
-            if (category && !selectedCategories.includes(category)) {
-                selectedCategories.push(category);
-                updateCategoryUI();
+    document.addEventListener("DOMContentLoaded", function () {
+        let storedData = localStorage.getItem("buyingGuideData");
+        let outputContainer = document.getElementById("selected-products").querySelector(".content");
+
+        if (storedData) {
+            let data = JSON.parse(storedData);
+            console.log("Retrieved Data:", data);
+
+            if (!data.categoryData || !Array.isArray(data.categoryData)) {
+                outputContainer.innerHTML = "<p>Error: No category data found.</p>";
+                return;
             }
-        });
-    
-        function updateCategoryUI() {
-            selectedCategoriesContainer.innerHTML = selectedCategories.map(category => 
-                `<span class="category-tag">${category} 
-                    <span class="remove-category" data-value="${category}">✖</span>
-                </span>`
-            ).join('');
-            
-            document.querySelectorAll(".remove-category").forEach(icon => {
-                icon.addEventListener("click", function () {
-                    let categoryToRemove = this.dataset.value;
-                    selectedCategories = selectedCategories.filter(cat => cat !== categoryToRemove);
-                    updateCategoryUI();
-                    updateBudgetAllocation();
-                });
-            });
-            updateBudgetAllocation();
-        }
-        
-        budgetInput.addEventListener("input", updateBudgetAllocation);
-    
-        function updateBudgetAllocation() {
-            let totalBudget = parseFloat(budgetInput.value) || 0;
-            percentageContainer.innerHTML = "";
-            amountContainer.innerHTML = "";
-    
-            if (totalBudget > 0 && selectedCategories.length > 0) {
-                selectedCategories.forEach(category => {
-                    let input = document.createElement("input");
-                    input.type = "number";
-                    input.placeholder = `Enter % for ${category}`;
-                    input.classList.add("category-percentage-input");
-                    input.dataset.category = category;
-                    percentageContainer.appendChild(input);
-                });
-    
-                document.querySelectorAll(".category-percentage-input").forEach(input => {
-                    input.addEventListener("input", function () {
-                        let totalPercentage = [...document.querySelectorAll(".category-percentage-input")]
-                            .reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
-                        
-                        if (totalPercentage > 100) {
-                            alert("Total percentage cannot exceed 100%");
-                            this.value = "";
-                            return;
-                        }
-                        
-                        amountContainer.innerHTML = selectedCategories.map(category => {
-                            let percent = parseFloat(document.querySelector(`input[data-category='${category}']`).value) || 0;
-                            let amount = (totalBudget * percent) / 100;
-                            return amount > 0 ? `<p>${category}: ₹${amount.toFixed(2)}</p>` : "";
-                        }).join('');
-                        
-                        checkFormCompletion();
-                    });
-                });
-            }
-            checkFormCompletion();
-        }
-    
-        function checkFormCompletion() {
-            let country = document.getElementById("country-select").value;
-            let state = document.getElementById("province-select").value;
-            let budget = document.getElementById("total-budget").value;
-            let percentagesFilled = [...document.querySelectorAll(".category-percentage-input")]
-                .every(input => input.value.trim() !== "");
-            
-            submitBtn.disabled = !(country && state && budget && selectedCategories.length > 0 && percentagesFilled);
-        }
-        
-        submitBtn.addEventListener("click", async function () {
-            let country = document.getElementById("country-select").value;
-            let state = document.getElementById("province-select").value;
-            let budget = document.getElementById("total-budget").value;
-            let categoryParams = [];
-        
-            for (let category of selectedCategories) {
-                let percentageInput = document.querySelector(`input[data-category='${category}']`);
-                let percentage = percentageInput ? parseFloat(percentageInput.value) || 0 : 0;
-                let allocatedAmount = (budget * percentage) / 100;
-                
-                let filteredProducts = await getFilteredProducts(category, allocatedAmount);
-                if (filteredProducts.length === 0) {
-                    alert(`No products available in ${category} within ₹${allocatedAmount.toFixed(2)} budget.`);
+
+            let content = `<h2>Selected Products for ${data.country}, ${data.state}</h2>`;
+            content += `<p><strong>Total Budget:</strong> ₹${data.budget}</p>`;
+
+            data.categoryData.forEach(item => {
+                if (!item.filteredProducts || !Array.isArray(item.filteredProducts) || item.filteredProducts.length === 0) {
+                    content += `<p>Error: No products found for ${item.category}.</p>`;
                     return;
                 }
-                
-                categoryParams.push(`${encodeURIComponent(category)}=${encodeURIComponent(percentage)}`);
-            }
-        
-          let url = `/pages/product-selected-by-user/?country=${encodeURIComponent(country)}&state=${encodeURIComponent(state)}&budget=${encodeURIComponent(budget)}&${categoryParams.join("&")}`;
-             window.location.href = url;
+
+                content += `<h3>${item.category} (${item.percentage}%)</h3>`;
+                content += `<p>Allocated Budget: ₹${item.allocatedAmount}</p>`;
+                content += `<div class="products-container">`;
+
+                item.filteredProducts.forEach(product => {
+                    if (!product.images || product.images.length === 0) {
+                        return; 
+                    }
+
+                    let productImage = product.images[0].src;
+                    let productUrl = `/products/${product.handle}`;
+                    let variantId = product.variants[0].id;
+                    let productPrice = parseFloat(product.variants[0].price);
+                    let allocatedAmount = parseFloat(item.allocatedAmount);
+
+                    content += `
+                        <div class="product-card">
+                            <a href="${productUrl}">
+                                <img src="${productImage}" alt="${product.title}" class="product-image">
+                            </a>
+                            <p><a href="${productUrl}">${product.handle}</a></p>
+                            <p><strong>Price:</strong> ₹${productPrice}</p>
+                            <button class="add-to-cart" data-variant-id="${variantId}" data-price="${productPrice}" data-allocated="${allocatedAmount}">Add to Cart</button>
+                        </div>
+                    `;
+                });
+
+                content += `</div>`;
+            });
+
+            outputContainer.innerHTML = content;
+
+            document.querySelectorAll(".add-to-cart").forEach(button => {
+                button.addEventListener("click", function () {
+                    let variantId = this.getAttribute("data-variant-id");
+                    let productPrice = parseFloat(this.getAttribute("data-price"));
+                    let allocatedAmount = parseFloat(this.getAttribute("data-allocated"));
+                    
+                    if (productPrice > allocatedAmount) {
+                        alert("This product exceeds the allocated budget for this category. Please select a different product.");
+                    } else {
+                        addToCart(variantId);
+                    }
+                });
+            });
+        } else {
+            outputContainer.innerHTML = "<p>No data found.</p>";
+        }
+    });
+
+    function addToCart(variantId) {
+        fetch("/cart/add.js", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                id: variantId,
+                quantity: 1
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Added to cart:", data);
+            window.location.href = "/cart";
+        })
+        .catch(error => {
+            console.error("Error adding to cart:", error);
+            alert("Failed to add product to cart.");
         });
-        
-        async function getFilteredProducts(category, budget) {
-            try {
-                let response = await fetch(`/collections/${category}/products.json?limit=250`);
-                
-                if (!response.ok) throw new Error(`Failed to fetch products. Status: ${response.status}`);
-                
-                let data = await response.json();
-                let filteredProducts = data.products.filter(product => 
-                    product.variants.some(variant => parseFloat(variant.price) <= budget)
-                );
-                
-                console.log(`Filtered products for ${category} within budget ₹${budget}:`, filteredProducts);
-                return filteredProducts;
-            } catch (error) {
-                console.error("Error fetching filtered products:", error);
-                return [];
-            }
-        }
-    });
-    
-</script>
-<!-- JavaScript -->
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    let country = urlParams.get("country");
-    let state = urlParams.get("state");
-    let budget = urlParams.get("budget");
-    let calculatedAmount = document.querySelector(".calculated-amounts");
-    
-    let selectedCategories = [];
-    urlParams.forEach((value, key) => {
-        if (key !== "country" && key !== "state" && key !== "budget") {
-            selectedCategories.push(key);
-        }
-    });
-
-    // Display selected details
-    let detailsContainer = document.createElement("div");
-    detailsContainer.classList.add("selected-details");
-    detailsContainer.innerHTML = `
-        <h2>Selected Preferences</h2>
-        <p><strong>Country:</strong> ${country || "Not Selected"}</p>
-        <p><strong>State:</strong> ${state || "Not Selected"}</p>
-        <p><strong>Total Budget:</strong> ₹${budget || "Not Provided"}</p>
-        <p><strong>Calculated Amount:</strong> ${calculatedAmount}</p>
-        
-        <h3>Selected Categories</h3>
-        <ul>
-            ${selectedCategories.length > 0 ? selectedCategories.map(cat => `<li>${cat}</li>`).join('') : "<li>No Categories Selected</li>"}
-        </ul>
-    `;
-
-    if (country || state || budget || selectedCategories.length > 0) {
-        document.body.prepend(detailsContainer); // Show details only if something is selected
     }
-
-    // Hide all products initially
-    document.querySelectorAll(".product-item").forEach(product => {
-        product.style.display = "none";
-    });
-
-    // Show only selected category products
-    selectedCategories.forEach(category => {
-        document.querySelectorAll(`.product-item[data-category="${category}"]`).forEach(product => {
-            product.style.display = "block";
-        });
-    });
-
-    // Add to Cart Button Click Event
-    document.querySelectorAll(".btn-add-cart").forEach(button => {
-        button.addEventListener("click", function () {
-            let productId = this.getAttribute("data-product-id");
-            let quantityContainer = document.getElementById(`quantity-container-${productId}`);
-            
-            if (quantityContainer) {
-                quantityContainer.style.display = "flex"; // Show quantity selector
-                this.style.display = "none"; // Hide "Add to Cart" button after clicking (optional)
-            }
-        });
-    });
-
-    
-});
 </script>
+
+<style>
+#selected-products {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    background-color: #f4f4f9;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+h2 {
+    font-size: 2.2rem;
+    color: #222;
+    text-align: center;
+    font-weight: bold;
+}
+
+h3 {
+    font-size: 1.8rem;
+    color: #333;
+    margin-top: 20px;
+    font-style: italic;
+    text-transform: capitalize;
+}
+
+p {
+    font-size: 1.2rem;
+    color: #555;
+}
+
+strong {
+    font-weight: bold;
+    color: #222;
+}
+
+/* Product Container */
+.products-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 25px;
+    justify-content: center;
+    padding-top: 20px;
+}
+
+/* Product Card */
+.product-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    width: 270px;
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Product Image */
+.product-image {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+/* Product Info */
+.product-card p a {
+    text-decoration: none;
+    color: #0073e6;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-top: 10px;
+    display: block;
+    transition: color 0.3s ease;
+}
+
+.product-card p a:hover {
+    color: #004a99;
+}
+
+/* Add to Cart Button */
+button.add-to-cart {
+    background: linear-gradient(90deg, #ff7e5f, #feb47b);
+    color: #fff;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 12px;
+    width: 100%;
+    font-size: 1.1rem;
+    font-weight: bold;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+button.add-to-cart:hover {
+    background: linear-gradient(90deg, #ff6b4a, #fd9a68);
+    transform: scale(1.05);
+}
+
+button.add-to-cart:active {
+    transform: scale(0.98);
+}
+
+
+</style>
+
+
