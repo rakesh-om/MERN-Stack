@@ -8,99 +8,112 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        let storedData = localStorage.getItem("buyingGuideData");
-        let outputContainer = document.getElementById("selected-products").querySelector(".content");
+    updateCartCount(); // Ensure cart count updates on page load
 
-        if (storedData) {
-            let data = JSON.parse(storedData);
-            console.log("Retrieved Data:", data);
+    let storedData = localStorage.getItem("buyingGuideData");
+    let outputContainer = document.getElementById("selected-products").querySelector(".content");
 
-            if (!data.categoryData || !Array.isArray(data.categoryData)) {
-                outputContainer.innerHTML = "<p>Error: No category data found.</p>";
+    if (storedData) {
+        let data = JSON.parse(storedData);
+        if (!data.categoryData || !Array.isArray(data.categoryData)) {
+            outputContainer.innerHTML = "<p>Error: No category data found.</p>";
+            return;
+        }
+
+        let content = `<h2>Selected Products for ${data.country}, ${data.state}</h2>`;
+        content += `<p><strong>Total Budget:</strong> ₹${data.budget}</p>`;
+
+        data.categoryData.forEach(item => {
+            if (!item.filteredProducts || item.filteredProducts.length === 0) {
+                content += `<p>Error: No products found for ${item.category}.</p>`;
                 return;
             }
 
-            let content = `<h2>Selected Products for ${data.country}, ${data.state}</h2>`;
-            content += `<p><strong>Total Budget:</strong> ₹${data.budget}</p>`;
+            content += `<h3>${item.category} (${item.percentage}%)</h3>`;
+            content += `<p>Allocated Budget: ₹${item.allocatedAmount}</p>`;
+            content += `<div class="products-container">`;
 
-            data.categoryData.forEach(item => {
-                if (!item.filteredProducts || !Array.isArray(item.filteredProducts) || item.filteredProducts.length === 0) {
-                    content += `<p>Error: No products found for ${item.category}.</p>`;
-                    return;
-                }
+            item.filteredProducts.forEach(product => {
+                if (!product.images || product.images.length === 0) return;
 
-                content += `<h3>${item.category} (${item.percentage}%)</h3>`;
-                content += `<p>Allocated Budget: ₹${item.allocatedAmount}</p>`;
-                content += `<div class="products-container">`;
+                let productImage = product.images[0].src;
+                let productUrl = `/products/${product.handle}`;
+                let variantId = product.variants[0].id;
+                let productPrice = parseFloat(product.variants[0].price);
+                let allocatedAmount = parseFloat(item.allocatedAmount);
 
-                item.filteredProducts.forEach(product => {
-                    if (!product.images || product.images.length === 0) {
-                        return; 
-                    }
-
-                    let productImage = product.images[0].src;
-                    let productUrl = `/products/${product.handle}`;
-                    let variantId = product.variants[0].id;
-                    let productPrice = parseFloat(product.variants[0].price);
-                    let allocatedAmount = parseFloat(item.allocatedAmount);
-
-                    content += `
-                        <div class="product-card">
-                            <a href="${productUrl}">
-                                <img src="${productImage}" alt="${product.title}" class="product-image">
-                            </a>
-                            <p><a href="${productUrl}">${product.handle}</a></p>
-                            <p><strong>Price:</strong> ₹${productPrice}</p>
-                            <button class="add-to-cart" data-variant-id="${variantId}" data-price="${productPrice}" data-allocated="${allocatedAmount}">Add to Cart</button>
-                        </div>
-                    `;
-                });
-
-                content += `</div>`;
+                content += `
+                    <div class="product-card">
+                        <a href="${productUrl}">
+                            <img src="${productImage}" alt="${product.title}" class="product-image">
+                        </a>
+                        <p><a href="${productUrl}">${product.handle}</a></p>
+                        <p><strong>Price:</strong> ₹${productPrice}</p>
+                        <button class="add-to-cart" data-variant-id="${variantId}" data-price="${productPrice}" data-allocated="${allocatedAmount}">Add to Cart</button>
+                    </div>
+                `;
             });
 
-            outputContainer.innerHTML = content;
-
-            document.querySelectorAll(".add-to-cart").forEach(button => {
-                button.addEventListener("click", function () {
-                    let variantId = this.getAttribute("data-variant-id");
-                    let productPrice = parseFloat(this.getAttribute("data-price"));
-                    let allocatedAmount = parseFloat(this.getAttribute("data-allocated"));
-                    
-                    if (productPrice > allocatedAmount) {
-                        alert("This product exceeds the allocated budget for this category. Please select a different product.");
-                    } else {
-                        addToCart(variantId);
-                    }
-                });
-            });
-        } else {
-            outputContainer.innerHTML = "<p>No data found.</p>";
-        }
-    });
-
-    function addToCart(variantId) {
-        fetch("/cart/add.js", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                id: variantId,
-                quantity: 1
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("Added to cart:", data);
-            window.location.href = "/cart";
-        })
-        .catch(error => {
-            console.error("Error adding to cart:", error);
-            alert("Failed to add product to cart.");
+            content += `</div>`;
         });
+
+        outputContainer.innerHTML = content;
+        
+        document.querySelectorAll(".add-to-cart").forEach(button => {
+            button.addEventListener("click", function () {
+
+                let variantId = this.getAttribute("data-variant-id");
+                let productPrice = parseFloat(this.getAttribute("data-price"));
+                let allocatedAmount = parseFloat(this.getAttribute("data-allocated"));
+                console.log('allocatedAmount: ', allocatedAmount);
+                console.log('productPrice: ', productPrice);
+                if (productPrice > allocatedAmount) {
+                    
+                    alert("This product exceeds the allocated budget for this category. Please select a different product.");
+                } else {
+                    addToCart(variantId);
+                }
+            });
+        });
+    } else {
+        outputContainer.innerHTML = "<p>No data found.</p>";
     }
+});
+
+// Function to add item to cart and update count
+function addToCart(variantId) {
+    fetch("/cart/add.js", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: variantId, quantity: 1 })
+    })
+    .then(response => response.json())
+    .then(() => {
+        updateCartCount(); // Update cart count after adding an item
+        alert("Product added to cart!");
+    })
+    .catch(error => {
+        console.error("Error adding to cart:", error);
+        alert("Failed to add product to cart.");
+    });
+}
+
+// Function to update cart count dynamically
+function updateCartCount() {
+    fetch("/cart.js")
+    .then(response => response.json())
+    .then(cart => {
+        let cartBubble = document.querySelector(".cart-count-bubble span[aria-hidden='true']");
+
+        if (cartBubble) {
+            cartBubble.textContent = cart.item_count > 0 ? cart.item_count : "";
+        }
+    })
+    .catch(error => console.error("Error updating cart count:", error));
+}
+
 </script>
+
 
 <style>
 #selected-products {
@@ -201,7 +214,7 @@ strong {
 
 /* Add to Cart Button */
 button.add-to-cart {
-    background: linear-gradient(90deg, #ff7e5f, #feb47b);
+    background: linear-gradient(135deg, #080808, #333);
     color: #fff;
     padding: 12px 22px;
     border: none;
@@ -212,11 +225,6 @@ button.add-to-cart {
     font-size: 1.1rem;
     font-weight: bold;
     transition: background 0.3s ease, transform 0.2s ease;
-}
-
-button.add-to-cart:hover {
-    background: linear-gradient(90deg, #ff6b4a, #fd9a68);
-    transform: scale(1.05);
 }
 
 button.add-to-cart:active {
