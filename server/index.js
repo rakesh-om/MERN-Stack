@@ -28,7 +28,7 @@ app.use('/api/projects', projectRoutes);
 
 // ✅ Import and use profile route
 const profileRoutes = require('./routes/profile');
-app.use('/api/profile', profileRoutes);
+app.use('/api/profiles', profileRoutes);
 
 // Start server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

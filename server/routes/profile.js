@@ -15,6 +15,7 @@ router.post('/', async (req, res) => {
 
 // GET: All profiles
 router.get('/', async (req, res) => {
+  console.log('GET /api/profiles route hit ✅'); // Optional for debugging
   try {
     const profiles = await Profile.find();
     res.json(profiles);
