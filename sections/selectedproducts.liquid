@@ -1,14 +1,18 @@
+
 <div id="selected-products">
     <div class="container">
         <div class="content">
             <h2>Loading...</h2>
+            
         </div>
     </div>
 </div>
 
 <script>
+   
     document.addEventListener("DOMContentLoaded", function () {
-    updateCartCount(); // Ensure cart count updates on page load
+
+    updateCartCount(); 
 
     let storedData = localStorage.getItem("buyingGuideData");
     let outputContainer = document.getElementById("selected-products").querySelector(".content");
@@ -21,16 +25,22 @@
         }
 
         let content = `<h2>Selected Products for ${data.country}, ${data.state}</h2>`;
-        content += `<p><strong>Total Budget:</strong> ₹${data.budget}</p>`;
+        content += `<p><strong>Total Budget:</strong> 
+        Rs.${data.budget}</p>`;
+
+        let categorySpentAmounts = {}; 
 
         data.categoryData.forEach(item => {
             if (!item.filteredProducts || item.filteredProducts.length === 0) {
                 content += `<p>Error: No products found for ${item.category}.</p>`;
                 return;
-            }
+            }   
+
+            let allocatedAmount = parseFloat(item.allocatedAmount);
+            categorySpentAmounts[item.category] = 0; 
 
             content += `<h3>${item.category} (${item.percentage}%)</h3>`;
-            content += `<p>Allocated Budget: ₹${item.allocatedAmount}</p>`;
+            content += `<p>Allocated Budget: Rs.${allocatedAmount}</p>`;
             content += `<div class="products-container">`;
 
             item.filteredProducts.forEach(product => {
@@ -40,37 +50,37 @@
                 let productUrl = `/products/${product.handle}`;
                 let variantId = product.variants[0].id;
                 let productPrice = parseFloat(product.variants[0].price);
-                let allocatedAmount = parseFloat(item.allocatedAmount);
 
-                content += `
-                    <div class="product-card">
-                        <a href="${productUrl}">
-                            <img src="${productImage}" alt="${product.title}" class="product-image">
-                        </a>
-                        <p><a href="${productUrl}">${product.handle}</a></p>
-                        <p><strong>Price:</strong> ₹${productPrice}</p>
-                        <button class="add-to-cart" data-variant-id="${variantId}" data-price="${productPrice}" data-allocated="${allocatedAmount}">Add to Cart</button>
-                    </div>
-                `;
+                
+                if (productPrice <= allocatedAmount) {
+                    content += `
+                        <div class="product-card">
+                            <a href="${productUrl}">
+                                <img src="${productImage}" alt="${product.title}" class="product-image">
+                            </a>
+                            <p><a href="${productUrl}">${product.handle}</a></p>
+                            <p><strong>Price:</strong> Rs. ${productPrice}</p>
+                            <button class="add-to-cart" data-variant-id="${variantId}" data-price="${productPrice}" data-category="${item.category}">Add to Cart</button>
+                        </div>
+                    `;
+                }
             });
 
             content += `</div>`;
         });
 
         outputContainer.innerHTML = content;
-        
+
         document.querySelectorAll(".add-to-cart").forEach(button => {
             button.addEventListener("click", function () {
-
                 let variantId = this.getAttribute("data-variant-id");
                 let productPrice = parseFloat(this.getAttribute("data-price"));
-                let allocatedAmount = parseFloat(this.getAttribute("data-allocated"));
-                console.log('allocatedAmount: ', allocatedAmount);
-                console.log('productPrice: ', productPrice);
-                if (productPrice > allocatedAmount) {
-                    
-                    alert("This product exceeds the allocated budget for this category. Please select a different product.");
+                let category = this.getAttribute("data-category");
+
+                if (categorySpentAmounts[category] + productPrice > data.categoryData.find(c => c.category === category).allocatedAmount) {
+                    alert(`You have exceeded the allocated budget for ${category}. Please select a cheaper product.`);
                 } else {
+                    categorySpentAmounts[category] += productPrice; 
                     addToCart(variantId);
                 }
             });
@@ -80,7 +90,6 @@
     }
 });
 
-// Function to add item to cart and update count
 function addToCart(variantId) {
     fetch("/cart/add.js", {
         method: "POST",
@@ -89,7 +98,7 @@ function addToCart(variantId) {
     })
     .then(response => response.json())
     .then(() => {
-        updateCartCount(); // Update cart count after adding an item
+        updateCartCount(); 
         alert("Product added to cart!");
     })
     .catch(error => {
@@ -98,7 +107,6 @@ function addToCart(variantId) {
     });
 }
 
-// Function to update cart count dynamically
 function updateCartCount() {
     fetch("/cart.js")
     .then(response => response.json())
@@ -111,7 +119,6 @@ function updateCartCount() {
     })
     .catch(error => console.error("Error updating cart count:", error));
 }
-
 </script>
 
 

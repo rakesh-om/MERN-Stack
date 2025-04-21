@@ -72,7 +72,7 @@
                             amountContainer.innerHTML = selectedCategories.map(category => {
                                 let percent = parseFloat(document.querySelector(`input[data-category='${category}']`).value) || 0;
                                 let amount = (totalBudget * percent) / 100;
-                                return amount > 0 ? `<p>${category}: ₹${amount.toFixed(2)}</p>` : "";
+                                return amount > 0 ? `<p>${category}: Rs.${amount.toFixed(2)}</p>` : "";
                             }).join('');
                             
                             checkFormCompletion();
@@ -105,7 +105,7 @@
                     
                     let filteredProducts = await getFilteredProducts(category, allocatedAmount);
                     if (filteredProducts.length === 0) {
-                        alert(`No products available in ${category} within ₹${allocatedAmount.toFixed(2)} budget.`);
+                        alert(`No products available in ${category} within Rs.${allocatedAmount.toFixed(2)} budget.`);
                         return;
                     }
                     
@@ -127,7 +127,7 @@
                         product.variants.some(variant => parseFloat(variant.price) <= budget)
                     );
                     
-                    console.log(`Filtered products for ${category} within budget ₹${budget}:`, filteredProducts);
+                    console.log(`Filtered products for ${category} within budget Rs${budget}:`, filteredProducts);
                     return filteredProducts;
                 } catch (error) {
                     console.error("Error fetching filtered products:", error);
